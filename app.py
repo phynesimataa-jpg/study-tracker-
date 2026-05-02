@@ -2,10 +2,21 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background: linear-gradient(to right, #1e3c72, #2a5298);
+        color: white;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # --- APP CONFIG ---
 st.set_page_config(page_title="Personal Study Tracker", layout="wide")
-st.title("📚 StudyTrack Dashboard")
+st.title("📚 Simataa studytracker Dashboard")
 
 # --- DATA LOADING ---
 def load_data():
@@ -18,7 +29,7 @@ df = load_data()
 
 # --- SIDEBAR: LOGGING SESSIONS ---
 st.sidebar.header("Log New Session")
-subject = st.sidebar.selectbox("Subject", ["Mathematics", "Physics", "Chemistry", "Biology", "Other"])
+subject = st.sidebar.selectbox("Subject", ["Mathematics", "Physics", "Chemistry", "Biology", "introducing to computing", "communication skills", "Other"])
 topic = st.sidebar.text_input("Topic (e.g. Kinematics)")
 minutes = st.sidebar.slider("Duration (Minutes)", 15, 180, 60)
 
