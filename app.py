@@ -4,6 +4,44 @@ import plotly.express as px
 from datetime import datetime
 import base64
 
+# Function to convert local image to base64
+def get_base64(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+# Get your image string
+img_path = 'Screenshot_20260502_210303_TikTok.jpg'
+bin_str = get_base64(img_path)
+
+# Unified CSS Block
+st.markdown(
+    f"""
+    <style>
+    [data-testid="stAppViewContainer"] {{
+        background-image: url("data:image/jpeg;base64,{bin_str}");
+        background-size: cover;
+        background-attachment: fixed;
+    }}
+
+    /* This adds the dark overlay/blur you had in your code */
+    [data-testid="stAppViewContainer"]::before {{
+        content: "";
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.4); 
+        backdrop-filter: blur(10px);
+        z-index: -1;
+    }}
+
+    /* Global text color */
+    .stApp {{
+        color: white;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # Function to convert local image to base64 so it can be used in CSS
 def get_base64(bin_file):
     with open(bin_file, 'rb') as f:
