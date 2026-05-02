@@ -2,6 +2,41 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from datetime import datetime
+import base64
+
+# Function to convert local image to base64 so it can be used in CSS
+def get_base64(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+# Replace 'Screenshot_20260502_210303_TikTok.jpg' with your actual file name from GitHub
+bin_str = get_base64('Screenshot_20260502_210303_TikTok.jpg')
+
+st.markdown(
+    f"""
+    <style>
+    .stApp {{
+        background-image: url("data:image/jpg;base64,{bin_str}");
+        background-size: cover;
+        background-attachment: fixed;
+    }}
+
+    .stApp::before {{
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.4); /* Dark overlay */
+        backdrop-filter: blur(10px); /* This adds the blur */
+        z-index: -1;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 st.markdown(
     """
     <style>
