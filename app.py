@@ -4,73 +4,53 @@ import plotly.express as px
 from datetime import datetime
 import time
 import base64
-import google.generativeai as genai
-from PyPDF2 import PdfReader
+import os
 
-# 1. PAGE CONFIG
-st.set_page_config(page_title="simataa center", layout="wide", initial_sidebar_state="expanded")
+# 1. PAGE SETUP
+st.set_page_config(page_title="simataa_vault", layout="wide")
 
-# --- AI CONFIG ---
-# Using your key from the screenshot
-genai.configure(api_key="AIzaSyCVGqqt5sMc514q5FQivrawod71iovY_eM")
-ai_model = genai.GenerativeModel('gemini-1.5-flash')
-
-# --- HYPER-VIBRANT CSS ---
+# --- PROFESSIONAL NEON CSS ---
 st.markdown("""
     <style>
-    /* Animated Vibrant Background */
-    .stApp {
-        background: linear-gradient(-45deg, #000000, #1a0000, #660000, #000000);
-        background-size: 400% 400%;
-        animation: gradient 15s ease infinite;
-    }
-    @keyframes gradient {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-
-    /* Glow Cards */
-    .subject-card {
-        padding: 20px; border-radius: 15px; margin-bottom: 15px;
-        background: rgba(255, 255, 255, 0.05);
-        border: 2px solid rgba(255, 0, 0, 0.3);
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.2);
-        text-align: center; transition: 0.3s;
-    }
-    .subject-card:hover {
-        border-color: #FF0000;
-        box-shadow: 0 0 25px rgba(255, 0, 0, 0.6);
-        transform: scale(1.02);
-    }
-
-    /* Metrics & Titles */
-    .red-title { 
-        color: #FF0000; font-size: 65px; font-weight: 900; 
-        text-transform: lowercase; letter-spacing: -4px;
-        text-shadow: 0 0 20px rgba(255,0,0,0.5);
-    }
-    [data-testid="stMetricValue"] { color: #FF0000 !important; font-size: 40px !important; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
     
-    /* Clean Sidebar */
-    .css-1d391kg { background-color: rgba(0,0,0,0.8); }
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Inter', sans-serif;
+        background-color: #050505;
+        color: #ffffff;
+    }
+    
+    .main-header {
+        background: linear-gradient(90deg, #FF0000 0%, #000000 100%);
+        padding: 40px; border-radius: 20px; margin-bottom: 30px;
+        border-bottom: 4px solid #FF0000;
+    }
+    
+    .logo-text {
+        font-size: 50px !important; font-weight: 900 !important;
+        letter-spacing: -2px; color: white; margin: 0;
+        text-transform: lowercase;
+    }
+
+    [data-testid="stMetricValue"] { color: #FF0000 !important; font-weight: 900 !important; }
+
+    .vault-card {
+        background: #0f0f0f; border: 1px solid #222;
+        padding: 20px; border-radius: 12px; text-align: center;
+        transition: 0.3s; margin-bottom: 10px;
+    }
+    .vault-card:hover { border-color: #FF0000; background: #1a0000; }
+    
+    .stSidebar { background-color: #000000 !important; border-right: 1px solid #222; }
+    
+    /* Clean file uploader styling */
+    [data-testid="stFileUploadDropzone"] {
+        background: rgba(255, 0, 0, 0.05);
+        border: 2px dashed #FF0000;
+        border-radius: 15px;
+    }
     </style>
     """, unsafe_allow_html=True)
-
-# --- VIDEO BACKGROUND ---
-def get_base64_bin(file_path):
-    try:
-        with open(file_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
-    except: return None
-
-# Matches your file: 6fd39406a1b61d04b0c9c39e6b3c51b9.mp4
-vid_str = get_base64_bin("6fd39406a1b61d04b0c9c39e6b3c51b9.mp4")
-if vid_str:
-    st.markdown(f'''
-        <style>#bgVideo {{ position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -1; filter: brightness(25%) contrast(120%); }}</style>
-        <video autoplay muted loop id="bgVideo"><source src="data:video/mp4;base64,{vid_str}" type="video/mp4"></video>
-    ''', unsafe_allow_html=True)
 
 # --- DATA SYSTEM ---
 def load_data():
@@ -82,91 +62,91 @@ def load_data():
         return pd.DataFrame(columns=["Date", "Subject", "Minutes", "Topic"])
 
 df = load_data()
+subjects = ["Mathematics", "Physics", "Chemistry", "Biology", "Computing"]
 
-# --- SIDEBAR: COMMAND ---
-st.sidebar.markdown('<h1 style="color:#FF0000">🕹️ COMMAND</h1>', unsafe_allow_html=True)
+# --- SIDEBAR: CONTROL ---
+st.sidebar.markdown('<h2 style="color:#FF0000;">🕹️ COMMAND</h2>', unsafe_allow_html=True)
 
 # 1. Focus Music
-if st.sidebar.toggle("🎵 Focus Music"):
-    st.sidebar.markdown('<iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8Ueb9C7V6S7" width="100%" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>', unsafe_allow_html=True)
+if st.sidebar.toggle("🎵 Focus Music", value=True):
+    st.sidebar.markdown('<iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8Ueb9C7V6S7?utm_source=generator&theme=0" width="100%" height="152" frameBorder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>', unsafe_allow_html=True)
 
-# 2. Timer
-if st.sidebar.toggle("⏱️ Study Timer"):
+# 2. Study Timer
+st.sidebar.divider()
+if st.sidebar.toggle("⏱️ Timer"):
     if "t_start" not in st.session_state: st.session_state.t_start = time.time()
     elapsed = int(time.time() - st.session_state.t_start)
     st.sidebar.metric("Live Session", f"{elapsed//60}m {elapsed%60}s")
+else:
+    st.session_state.t_start = None
 
-# 3. Logging (Fixed ValueError)
+# 3. Log Grind
 st.sidebar.divider()
 with st.sidebar.expander("📝 Log Session"):
-    sub_list = ["Mathematics", "Physics", "Chemistry", "Biology", "Computing"]
-    s = st.selectbox("Subject", sub_list)
+    s = st.selectbox("Subject", subjects)
     t = st.text_input("Topic")
-    d = st.number_input("Minutes", 5, 300, 60)
+    m = st.number_input("Minutes", 5, 480, 60)
     if st.button("Commit"):
-        new_entry = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), s, float(d), t]], columns=["Date", "Subject", "Minutes", "Topic"])
-        pd.concat([df, new_entry]).to_csv("study_data.csv", index=False)
+        new = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), s, float(m), t]], columns=df.columns)
+        pd.concat([df, new]).to_csv("study_data.csv", index=False)
         st.rerun()
 
-# --- MAIN DASHBOARD ---
-tab1, tab2 = st.tabs(["📊 Analytics", "🤖 AI Tutor"])
+# --- MAIN INTERFACE ---
+st.markdown(f'''
+    <div class="main-header">
+        <p class="logo-text">simataa.center</p>
+        <p style="color: #FF5555; font-weight: 700; margin:0; text-transform: uppercase; font-size: 12px;">
+            Elite Status | CBU STEM
+        </p>
+    </div>
+''', unsafe_allow_html=True)
+
+tab1, tab2 = st.tabs(["📊 DASHBOARD", "📂 DOCUMENT VAULT"])
 
 with tab1:
-    st.markdown('<p class="red-title">simataa tracker</p>', unsafe_allow_html=True)
-    
-    # KPIs
-    c1, c2, c3 = st.columns(3)
+    # Top Stats
     total_h = df['Minutes'].sum() / 60
-    c1.metric("Total Grind", f"{total_h:.1f} hrs")
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Lifetime Grind", f"{total_h:.1f} hrs")
     c2.metric("Rank", "GOAT")
     c3.metric("University", "CBU")
 
-    # GRAPHS (Vibrant Plotly)
-    st.write("### 📈 Performance Visuals")
+    st.write("### 📉 Momentum")
     if not df.empty:
-        g1, g2 = st.columns(2)
+        g1, g2 = st.columns([1, 1.5])
         with g1:
-            fig_pie = px.pie(df, values='Minutes', names='Subject', hole=0.7, 
-                             color_discrete_sequence=px.colors.sequential.Reds_r)
-            fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', font_color="white", showlegend=False, title="Time Share")
+            fig_pie = px.pie(df, values='Minutes', names='Subject', hole=0.7,
+                             color_discrete_sequence=['#FF0000', '#880000', '#440000'])
+            fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', font_color="white", showlegend=False)
             st.plotly_chart(fig_pie, use_container_width=True)
         with g2:
             daily = df.groupby('Date')['Minutes'].sum().reset_index()
-            fig_line = px.area(daily, x='Date', y='Minutes', title="Momentum")
-            fig_line.update_traces(line_color='#FF0000', fillcolor='rgba(255,0,0,0.3)')
+            fig_line = px.area(daily, x='Date', y='Minutes')
+            fig_line.update_traces(line_color='#FF0000', fillcolor='rgba(255,0,0,0.2)')
             fig_line.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="white")
             st.plotly_chart(fig_line, use_container_width=True)
     
-    # VAULTS
-    st.write("### 📂 Subject Vaults")
+    st.write("### 📂 Subject Totals")
     v_cols = st.columns(5)
-    for i, sub in enumerate(sub_list):
+    for i, sub in enumerate(subjects):
         with v_cols[i]:
-            st.markdown(f'<div class="subject-card">{sub}</div>', unsafe_allow_html=True)
             val = df[df['Subject'] == sub]['Minutes'].sum() / 60
-            st.write(f"**{val:.1f}h**")
+            st.markdown(f'<div class="vault-card"><p style="color:#888; font-size:12px;">{sub}</p><h3>{val:.1f}h</h3></div>', unsafe_allow_html=True)
 
 with tab2:
-    st.subheader("🤖 Chat with Tutorial Sheets")
-    # Fixed file_uploader to prevent image crashes
-    doc = st.file_uploader("Upload PDF Tutorials", type=["pdf"])
+    st.header("📂 Digital Resource Vault")
+    st.write("Upload your tutorial sheets or notes here to keep them organized by subject.")
     
-    if doc:
-        try:
-            reader = PdfReader(doc)
-            full_text = "".join([p.extract_text() for p in reader.pages])
-            st.success("Document analyzed. The AI is ready.")
-            
-            if "chat" not in st.session_state: st.session_state.chat = []
-            prompt = st.chat_input("Ask a question about the tutorial...")
-            
-            if prompt:
-                context = f"Tutorial Data: {full_text[:8000]}\n\nUser Question: {prompt}"
-                response = ai_model.generate_content(context)
-                st.session_state.chat.append({"u": prompt, "b": response.text})
-            
-            for c in st.session_state.chat:
-                with st.chat_message("user"): st.write(c["u"])
-                with st.chat_message("assistant"): st.write(c["b"])
-        except Exception as e:
-            st.error(f"Error reading PDF: {e}. Please ensure it is a valid document.")
+    target_sub = st.selectbox("Select Subject for Upload", subjects)
+    uploaded_files = st.file_uploader("Drop Documents (PDF, Images, etc.)", accept_multiple_files=True)
+    
+    if uploaded_files:
+        st.success(f"Successfully added {len(uploaded_files)} files to {target_sub} Vault.")
+        for uploaded_file in uploaded_files:
+            # Displaying the files in a clean list
+            st.markdown(f'''
+                <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 5px solid #FF0000;">
+                    <strong>{uploaded_file.name}</strong> <span style="color:#888; font-size:12px;">({uploaded_file.size // 1024} KB)</span>
+                </div>
+            ''', unsafe_allow_html=True)
+
