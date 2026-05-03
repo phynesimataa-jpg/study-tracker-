@@ -1,141 +1,147 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import base64
+import random
+import google.generativeai as genai
+from PyPDF2 import PdfReader
 
-# 1. Page Configuration
-st.set_page_config(page_title="simataa studytracker", layout="wide", initial_sidebar_state="expanded")
+# 1. PAGE SETUP
+st.set_page_config(page_title="simataa command center", layout="wide", initial_sidebar_state="expanded")
 
-# --- VIDEO BACKGROUND ENGINE ---
-def get_base64_bin(file_path):
-    with open(file_path, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
+# --- AI CONFIGURATION ---
+# Using the key you just provided
+genai.configure(api_key="AIzaSyCVGqqt5sMc514q5FQivrawod71iovY_eM")
+ai_model = genai.GenerativeModel('gemini-1.5-flash')
 
-try:
-    # Uses your exact Mbappé video filename
-    bin_str = get_base64_bin("6fd39406a1b61d04b0c9c39e6b3c51b9.mp4")
-    st.markdown(f'''
-        <style>
-        #bgVideo {{
-          position: fixed; right: 0; bottom: 0;
-          min-width: 100%; min-height: 100%;
-          z-index: -1; filter: brightness(35%) contrast(115%) blur(1px);
-        }}
-        /* THE RED TITLE FROM TIKTOK */
-        .red-title {{
-            color: #FF0000 !important; font-size: 65px !important;
-            font-weight: 900 !important; text-transform: lowercase;
-            font-family: 'Arial Black', sans-serif; letter-spacing: -3px;
-            margin-bottom: -20px; padding-top: 20px;
-        }}
-        /* STYLING FOR THE DASHBOARD NUMBERS */
-        .stMetric {{
-            background: rgba(0, 0, 0, 0.5); border: 2px solid #FF0000;
-            border-radius: 12px; padding: 10px;
-        }}
-        </style>
-        <video autoplay muted loop id="bgVideo"><source src="data:video/mp4;base64,{bin_str}" type="video/mp4"></video>
-    ''', unsafe_allow_html=True)
-except Exception:
-    st.warning("Video not found. Ensure '6fd39406a1b61d04b0c9c39e6b3c51b9.mp4' is uploaded to GitHub.")
-
-# --- THE HEADER ---
-st.markdown('<h1 class="red-title">simataa studytracker</h1>', unsafe_allow_html=True)
-st.write("---")
-
-# 2. Data Logic
-def load_data():
-    try:
-        return pd.read_csv("study_data.csv")
-    except:
-        return pd.DataFrame(columns=["Date", "Subject", "Minutes", "Topic"])
-
-df = load_data()
-
-# --- SIDEBAR: CONTROL CENTER ---
-st.sidebar.markdown('<h2 style="color: #FF0000; font-weight: 900;">🕹️ CONTROLS</h2>', unsafe_allow_html=True)
-
-# LIVE TIMER
-st.sidebar.subheader("⏲️ Study Timer")
-if "start_time" not in st.session_state:
-    st.session_state.start_time = None
-if "timer_running" not in st.session_state:
-    st.session_state.timer_running = False
-
-col1, col2 = st.sidebar.columns(2)
-if col1.button("▶️ Start"):
-    st.session_state.start_time = time.time()
-    st.session_state.timer_running = True
-if col2.button("⏹️ Stop"):
-    st.session_state.timer_running = False
-
-if st.session_state.timer_running and st.session_state.start_time:
-    timer_place = st.sidebar.empty()
-    # Live counting loop
-    while st.session_state.timer_running:
-        elapsed = time.time() - st.session_state.start_time
-        m, s = divmod(int(elapsed), 60)
-        timer_place.metric("Focusing for:", f"{m:02d}:{s:02d}")
-        time.sleep(1)
-
-# MUSIC PLAYER
-st.sidebar.divider()
-show_music = st.sidebar.toggle("🎵 Focus Music", value=True)
-if show_music:
-    st.sidebar.markdown("""
-        <iframe style="border-radius:12px" 
-        src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8Uebhn9wzrS" 
-        width="100%" height="152" frameBorder="0" allowfullscreen="" 
-        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+# --- STYLE ENGINE ---
+st.markdown("""
+    <style>
+    .subject-card {
+        padding: 20px; border-radius: 15px; margin-bottom: 15px;
+        border-left: 12px solid; background: rgba(255, 255, 255, 0.08);
+        transition: transform 0.3s; color: white;
+    }
+    .subject-card:hover { transform: scale(1.03); background: rgba(255, 255, 255, 0.15); }
+    .greeting-box {
+        padding: 25px; border-radius: 15px; background: rgba(255, 0, 0, 0.15);
+        border: 2px solid #FF0000; text-align: center; margin-bottom: 20px;
+    }
+    .red-title { 
+        color: #FF0000 !important; font-size: 60px !important; 
+        font-weight: 900 !important; text-transform: lowercase; letter-spacing: -3px; 
+    }
+    </style>
     """, unsafe_allow_html=True)
 
-# LOGGING
-st.sidebar.divider()
-with st.sidebar.expander("📝 Log Session"):
-    # Pre-filled with standard STEM subjects
-    subj = st.selectbox("Subject", ["Mathematics", "Physics", "Chemistry", "Biology", "Computing"])
-    top = st.text_input("Topic Worked On")
-    mins = st.number_input("Minutes", 5, 300, 60)
-    if st.button("Save to Dashboard"):
-        new = pd.DataFrame([[datetime.now().date(), subj, mins, top]], columns=df.columns)
-        df = pd.concat([df, new], ignore_index=True)
-        df.to_csv("study_data.csv", index=False)
-        st.rerun()
+# --- VIDEO BACKGROUND ---
+def get_base64_bin(file_path):
+    try:
+        with open(file_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except: return None
 
-# --- MAIN DASHBOARD VISUALS ---
-if not df.empty:
-    # Top Stats Row
-    total_m = df['Minutes'].sum()
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Focus Time", f"{total_m // 60}h {total_m % 60}m")
-    c2.metric("Sessions Logged", len(df))
-    c3.metric("Latest Subject", df['Subject'].iloc[-1])
+bin_str = get_base64_bin("6fd39406a1b61d04b0c9c39e6b3c51b9.mp4")
+if bin_str:
+    st.markdown(f'''
+        <style>#bgVideo {{ position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -1; filter: brightness(25%); }}</style>
+        <video autoplay muted loop id="bgVideo"><source src="data:video/mp4;base64,{bin_str}" type="video/mp4"></video>
+    ''', unsafe_allow_html=True)
 
-    st.divider()
+# --- GREETINGS ---
+hour = datetime.now().hour
+if 5 <= hour < 12: msg, sub = "Good Morning, Simataa", "The GOATs are already awake. Let's work."
+elif 12 <= hour < 18: msg, sub = "Good Afternoon", "Keep the momentum going."
+elif 18 <= hour < 22: msg, sub = "Good Evening", "Finishing strong today."
+else: msg, sub = "Midnight Focus", "Silent hours are for the champions."
+st.markdown(f'''<div class="greeting-box"><h1>{msg}</h1><p>{sub}</p></div>''', unsafe_allow_html=True)
 
-    # The Chart (Digital Wellbeing Horizontal Style)
-    st.subheader("Time Distribution")
-    chart_df = df.groupby('Subject')['Minutes'].sum().reset_index().sort_values('Minutes')
-    fig = px.bar(chart_df, x='Minutes', y='Subject', orientation='h',
-                 color='Subject', color_discrete_sequence=['#FF0000', '#CC0000', '#990000', '#660000'])
+# --- DATA LOAD ---
+def load_data():
+    try: return pd.read_csv("study_data.csv")
+    except: return pd.DataFrame(columns=["Date", "Subject", "Minutes", "Topic", "Achievement", "Grade"])
+df = load_data()
+df['Date'] = pd.to_datetime(df['Date'])
+
+# --- TABS ---
+tab1, tab2 = st.tabs(["🚀 Dashboard & Vaults", "🤖 AI Study Partner"])
+
+with tab1:
+    st.markdown('<h1 class="red-title">simataa studytracker</h1>', unsafe_allow_html=True)
     
-    fig.update_layout(
-        showlegend=False, plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
-        font_color="white", xaxis=dict(showgrid=False, showticklabels=False, title=""), 
-        yaxis=dict(showgrid=False, title="")
-    )
-    st.plotly_chart(fig, use_container_width=True)
+    # Weekly Stats
+    last_7 = df[df['Date'] >= (datetime.now() - timedelta(days=7))]
+    weekly_hrs = last_7['Minutes'].sum() / 60
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric("Focus this Week", f"{weekly_hrs:.1f} hrs")
+        st.progress(min(weekly_hrs/25, 1.0)) 
+    with c2:
+        st.subheader("🏆 CBU Leaderboard")
+        lb = pd.DataFrame({"User": ["Simataa", "Musoka", "Grace", "James"], "Hrs": [weekly_hrs, 18.5, 22.1, 15.0]}).sort_values("Hrs", ascending=False)
+        st.table(lb)
 
-    # Subject Mastery List
-    st.markdown("### 📖 Subject Mastery")
-    for s in df['Subject'].unique():
-        # Gathers all topics you've logged under this specific subject
-        topics = df[df['Subject'] == s]['Topic'].dropna().unique()
-        topics_str = ", ".join(topics) if len(topics) > 0 else "General"
-        st.write(f"🔴 **{s}**: {topics_str}")
+    # Subject Vaults
+    st.write("### Your Memory Vaults")
+    subs = {"Mathematics": "#FF1744", "Physics": "#2979FF", "Chemistry": "#00E676", "Biology": "#FFEA00", "Computing": "#D500F9"}
+    v_cols = st.columns(5)
+    for i, (s_name, s_clr) in enumerate(subs.items()):
+        with v_cols[i]:
+            st.markdown(f'<div class="subject-card" style="border-color:{s_clr}">{s_name}</div>', unsafe_allow_html=True)
+            with st.expander("Vault"):
+                s_df = df[df['Subject'] == s_name]
+                st.write(f"Total: {s_df['Minutes'].sum()/60:.1f}h")
+                if not s_df.empty:
+                    st.caption(s_df.tail(3)[['Date', 'Topic']])
 
-else:
-    st.info("Your dashboard is empty. Use the sidebar on the left to log your first session!")
+with tab2:
+    st.subheader("🤖 Chat with Tutorial Sheets")
+    doc = st.file_uploader("Upload PDF (Tutorials/Notes)", type="pdf")
+    if doc:
+        reader = PdfReader(doc)
+        doc_text = "".join([p.extract_text() for p in reader.pages])
+        st.success("Document Loaded!")
+        
+        if "messages" not in st.session_state: st.session_state.messages = []
+        user_in = st.chat_input("Ask about the tutorial questions...")
+        
+        if user_in:
+            prompt = f"Context: {doc_text}\n\nQuestion: {user_in}"
+            resp = ai_model.generate_content(prompt)
+            st.session_state.messages.append({"u": user_in, "b": resp.text})
+            
+        for m in st.session_state.messages:
+            with st.chat_message("user"): st.write(m["u"])
+            with st.chat_message("assistant"): st.write(m["b"])
+
+# --- SIDEBAR LABS ---
+st.sidebar.markdown('<h1 style="color:#FF0000">🧪 THE LABS</h1>', unsafe_allow_html=True)
+
+# Live Timer
+if "t_start" not in st.session_state: st.session_state.t_start = None
+if st.sidebar.button("⏱️ Start/Reset Timer"): st.session_state.t_start = time.time()
+
+if st.session_state.t_start:
+    elapsed = int(time.time() - st.session_state.t_start)
+    st.sidebar.metric("Active Session", f"{elapsed//60}m {elapsed%60}s")
+    if elapsed >= 1200: 
+        st.sidebar.warning("🔥 20 MINS! STAY FOCUSED.")
+        st.sidebar.image("https://www.brainyquote.com/photos_tr/en/e/elonmusk/630403/elonmusk1-2x.jpg")
+
+# Countdown
+exam = st.sidebar.date_input("Exam Date", datetime(2026, 6, 1))
+st.sidebar.error(f"⚠️ {(exam - datetime.now().date()).days} Days to Exam")
+
+# Log Data
+with st.sidebar.expander("📝 Log Session"):
+    sub_log = st.selectbox("Subject", list(subs.keys()))
+    top_log = st.text_input("Topic")
+    min_log = st.number_input("Minutes", 5, 300, 60)
+    if st.button("Commit"):
+        new_row = pd.DataFrame([[datetime.now().date(), sub_log, min_log, top_log, "Done", 0]], columns=df.columns)
+        pd.concat([df, new_row]).to_csv("study_data.csv", index=False)
+        st.rerun()
