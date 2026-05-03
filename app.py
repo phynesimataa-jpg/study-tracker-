@@ -4,7 +4,6 @@ import plotly.express as px
 from datetime import datetime, timedelta
 import time
 import base64
-import random
 import google.generativeai as genai
 from PyPDF2 import PdfReader
 
@@ -12,28 +11,170 @@ from PyPDF2 import PdfReader
 st.set_page_config(page_title="simataa command center", layout="wide", initial_sidebar_state="expanded")
 
 # --- AI CONFIGURATION ---
-# Using the key you just provided
 genai.configure(api_key="AIzaSyCVGqqt5sMc514q5FQivrawod71iovY_eM")
 ai_model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- STYLE ENGINE ---
+# --- VIBRANT STYLE ENGINE ---
 st.markdown("""
     <style>
+    /* Vibrant Gradient Background */
+    .stApp {
+        background: linear-gradient(135deg, #000000 0%, #1a0000 50%, #4d0000 100%);
+    }
+    
+    /* Neon Glow Cards */
     .subject-card {
-        padding: 20px; border-radius: 15px; margin-bottom: 15px;
-        border-left: 12px solid; background: rgba(255, 255, 255, 0.08);
-        transition: transform 0.3s; color: white;
+        padding: 25px; border-radius: 15px; margin-bottom: 20px;
+        border: 1px solid rgba(255, 0, 0, 0.3);
+        background: rgba(255, 255, 255, 0.05);
+        box-shadow: 0 4px 15px rgba(255, 0, 0, 0.2);
+        transition: all 0.3s ease; color: white; text-align: center;
     }
-    .subject-card:hover { transform: scale(1.03); background: rgba(255, 255, 255, 0.15); }
+    .subject-card:hover { 
+        transform: translateY(-5px); 
+        box-shadow: 0 8px 25px rgba(255, 0, 0, 0.5);
+        background: rgba(255, 0, 0, 0.1);
+    }
+
+    /* Vibrant Greeting Box */
     .greeting-box {
-        padding: 25px; border-radius: 15px; background: rgba(255, 0, 0, 0.15);
-        border: 2px solid #FF0000; text-align: center; margin-bottom: 20px;
+        padding: 30px; border-radius: 20px; 
+        background: linear-gradient(90deg, rgba(255,0,0,0.2) 0%, rgba(0,0,0,0.6) 100%);
+        border-left: 10px solid #FF0000;
+        margin-bottom: 30px; box-shadow: 10px 10px 30px rgba(0,0,0,0.5);
     }
+
     .red-title { 
         color: #FF0000 !important; font-size: 60px !important; 
-        font-weight: 900 !important; text-transform: lowercase; letter-spacing: -3px; 
+        font-weight: 900 !important; text-transform: lowercase; 
+        letter-spacing: -3px; text-shadow: 2px 2px 10px rgba(255,0,0,0.4);
     }
+    
+    /* Fix for metric text visibility */
+    [data-testid="stMetricValue"] { color: #FF3333 !important; font-weight: 800 !important; }
+    [data-testid="stMetricLabel"] { color: #FFAAAA !important; }
     </style>
+    """, unsafe_allow_html=True)
+
+# --- VIDEO BACKGROUND ---
+def get_base64_bin(file_path):
+    try:
+        with open(file_path, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except: return None
+
+bin_str = get_base64_bin("6fd39406a1b61d04b0c9c39e6b3c51b9.mp4")
+if bin_str:
+    st.markdown(f'''
+        <style>#bgVideo {{ position: fixed; right: 0; bottom: 0; min-width: 100%; min-height: 100%; z-index: -1; filter: brightness(20%) saturate(150%); }}</style>
+        <video autoplay muted loop id="bgVideo"><source src="data:video/mp4;base64,{bin_str}" type="video/mp4"></video>
+    ''', unsafe_allow_html=True)
+
+# --- GREETINGS ---
+hour = datetime.now().hour
+msg = "Good Morning, Simataa" if 5 <= hour < 12 else "Good Afternoon" if 12 <= hour < 18 else "Good Evening"
+st.markdown(f'''<div class="greeting-box"><h1 style="margin:0;">{msg}</h1><p style="color:#FF5555;">Focus like a champion today.</p></div>''', unsafe_allow_html=True)
+
+# --- DATA ENGINE ---
+def load_data():
+    try: 
+        data = pd.read_csv("study_data.csv")
+        data['Date'] = pd.to_datetime(data['Date'])
+        data['Minutes'] = pd.to_numeric(data['Minutes'], errors='coerce').fillna(0)
+        return data
+    except: 
+        return pd.DataFrame(columns=["Date", "Subject", "Minutes", "Topic"])
+df = load_data()
+
+# --- SIDEBAR: CONTROLS ---
+st.sidebar.markdown('<h1 style="color:#FF0000">🕹️ COMMAND</h1>', unsafe_allow_html=True)
+
+# 1. MUSIC
+music_on = st.sidebar.toggle("🎵 Focus Music")
+if music_on:
+    st.sidebar.markdown('<iframe src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8Ueb9C7V6S7" width="100%" height="80" frameborder="0" allowtransparency="true" allow="encrypted-media"></iframe>', unsafe_allow_html=True)
+
+# 2. TIMER
+st.sidebar.divider()
+timer_on = st.sidebar.toggle("⏱️ Study Timer")
+if timer_on:
+    if "t_start" not in st.session_state: st.session_state.t_start = time.time()
+    elapsed = int(time.time() - st.session_state.t_start)
+    st.sidebar.metric("Active Session", f"{elapsed//60}m {elapsed%60}s")
+    if elapsed >= 1200: st.sidebar.warning("🔥 20 MINS! STAY LETHAL.")
+else:
+    st.session_state.t_start = None
+
+# 3. LOGGING
+st.sidebar.divider()
+with st.sidebar.expander("📝 Log Grind"):
+    sub_list = ["Mathematics", "Physics", "Chemistry", "Biology", "Computing"]
+    s_choice = st.selectbox("Subject", sub_list)
+    t_choice = st.text_input("Topic")
+    d_choice = st.number_input("Minutes", 5, 300, 60)
+    if st.button("Commit to Vault"):
+        new_row = pd.DataFrame([[datetime.now().strftime("%Y-%m-%d"), s_choice, float(d_choice), t_choice]], columns=df.columns)
+        pd.concat([df, new_row]).to_csv("study_data.csv", index=False)
+        st.rerun()
+
+# --- MAIN TABS ---
+tab1, tab2 = st.tabs(["📊 Analytics", "🤖 AI Tutor"])
+
+with tab1:
+    st.markdown('<h1 class="red-title">simataa studytracker</h1>', unsafe_allow_html=True)
+    
+    # ROW 1: METRICS
+    total_h = df['Minutes'].sum() / 60
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Hours", f"{total_h:.1f}h")
+    m2.metric("Sessions", len(df))
+    m3.metric("Goal Progress", f"{min((total_h/30)*100, 100):.0f}%")
+
+    # ROW 2: VIBRANT GRAPHS
+    if not df.empty:
+        g1, g2 = st.columns(2)
+        with g1:
+            fig_pie = px.pie(df, values='Minutes', names='Subject', hole=0.6, 
+                             title="Focus Distribution", color_discrete_sequence=px.colors.sequential.Reds_r)
+            fig_pie.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="white", showlegend=False)
+            st.plotly_chart(fig_pie, use_container_width=True)
+        with g2:
+            daily = df.groupby('Date')['Minutes'].sum().reset_index()
+            fig_line = px.area(daily, x='Date', y='Minutes', title="Grind Momentum")
+            fig_line.update_traces(line_color='#FF0000', fillcolor='rgba(255,0,0,0.2)')
+            fig_line.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', font_color="white")
+            st.plotly_chart(fig_line, use_container_width=True)
+
+    # ROW 3: VAULTS
+    st.write("### 📂 Subject Vaults")
+    v_cols = st.columns(5)
+    clrs = ["#FF1744", "#2979FF", "#00E676", "#FFEA00", "#D500F9"]
+    for i, s in enumerate(sub_list):
+        with v_cols[i]:
+            st.markdown(f'<div class="subject-card" style="border-color:{clrs[i]}">{s}</div>', unsafe_allow_html=True)
+            s_val = df[df['Subject'] == s]['Minutes'].sum() / 60
+            st.write(f"<h4 style='text-align:center; color:{clrs[i]}'>{s_val:.1f}h</h4>", unsafe_allow_html=True)
+
+with tab2:
+    st.subheader("🤖 Chat with Tutorial Sheets")
+    doc = st.file_uploader("Upload PDF", type="pdf")
+    if doc:
+        reader = PdfReader(doc)
+        txt = "".join([p.extract_text() for p in reader.pages])
+        st.success("Analysis Complete.")
+        
+        if "chat" not in st.session_state: st.session_state.chat = []
+        u_in = st.chat_input("Ask a question...")
+        
+        if u_in:
+            prompt = f"Doc: {txt[:8000]}\nQuestion: {u_in}"
+            response = ai_model.generate_content(prompt)
+            st.session_state.chat.append({"u": u_in, "b": response.text})
+            
+        for c in st.session_state.chat:
+            with st.chat_message("user"): st.write(c["u"])
+            with st.chat_message("assistant"): st.write(c["b"])
     """, unsafe_allow_html=True)
 
 # --- VIDEO BACKGROUND ---
