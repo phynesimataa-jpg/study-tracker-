@@ -7,7 +7,7 @@ import base64
 import os
 
 # 1. PAGE SETUP
-st.set_page_config(page_title="simataa_vault", layout="long")
+st.set_page_config(page_title="simataa_vault", layout="centered")
 
 # --- PROFESSIONAL NEON CSS ---
 st.markdown("""
