@@ -7,7 +7,7 @@ import base64
 import os
 
 # 1. PAGE SETUP
-st.set_page_config(page_title="simataa_vault", layout="wide")
+st.set_page_config(page_title="simataa_vault", layout="long")
 
 # --- PROFESSIONAL NEON CSS ---
 st.markdown("""
@@ -16,12 +16,12 @@ st.markdown("""
     
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif;
-        background-color: #050505;
+        background-color: #00FF89;
         color: #ffffff;
     }
     
     .main-header {
-        background: linear-gradient(90deg, #FF0000 0%, #000000 100%);
+        background: linear-gradient(90deg, #C0C0C0 0%, #010101 100%);
         padding: 40px; border-radius: 20px; margin-bottom: 30px;
         border-bottom: 4px solid #FF0000;
     }
