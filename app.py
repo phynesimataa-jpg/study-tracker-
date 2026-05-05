@@ -16,7 +16,7 @@ st.markdown("""
     
     html, body, [data-testid="stAppViewContainer"] {
         font-family: 'Inter', sans-serif;
-        background-color: #00FF89;
+        background-color: #006F62;
         color: #ffffff;
     }
     
